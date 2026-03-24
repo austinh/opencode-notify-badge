@@ -33,18 +33,19 @@ ocx add kdco/workspace --from https://registry.kdco.dev
 
 > "Notify the human when the AI needs them back, not for every micro-event."
 
-| Event | Notifies? | Sound | Why |
-|-------|-----------|-------|-----|
-| Session complete | Yes | Glass | Main task done - time to review |
-| Session error | Yes | Basso | Something broke - needs attention |
-| Permission needed | Yes | Submarine | AI is blocked, waiting for you |
-| Question asked | Yes | Submarine (default) | Questions should always reach you promptly |
-| Sub-task complete / error | No (default) | - | Set `notifyChildSessions: true` to include child-session `session.idle` and `session.error` events |
+| Event | Notifies? | Sound | Badge | Why |
+|-------|-----------|-------|-------|-----|
+| Session complete | Yes | Glass | Yes | Main task done - time to review |
+| Session error | Yes | Basso | Yes | Something broke - needs attention |
+| Permission needed | Yes | Submarine | Yes | AI is blocked, waiting for you |
+| Question asked | Yes | Submarine (default) | Yes | Questions should always reach you promptly |
+| Sub-task complete / error | No (default) | - | - | Set `notifyChildSessions: true` to include child-session `session.idle` and `session.error` events |
 
 The plugin automatically:
 1. Detects your terminal emulator (supports 37+ terminals)
 2. Suppresses `session.idle`, `session.error`, and `permission.updated` notifications when your terminal is focused on macOS
 3. Enables click-to-focus on macOS (click notification → terminal foregrounds)
+4. Sends a terminal badge (`BEL` / `\x07`) to flash the terminal tab and badge the dock icon
 
 Question notifications intentionally bypass macOS focus suppression so direct prompts are not missed.
 
@@ -71,6 +72,7 @@ If [cmux](https://www.cmux.dev/) is unavailable or invocation fails, notificatio
 | Feature | macOS | Windows | Linux |
 |---------|-------|---------|-------|
 | Native OS notifications | Yes | Yes | Yes |
+| Terminal badge (BEL) | Yes | Yes | Yes |
 | Custom sounds | Yes | No | No |
 | Focus detection | Yes | No | No |
 | Click-to-focus | Yes | No | No |
@@ -90,6 +92,9 @@ Works out of the box. To customize, create `~/.config/opencode/kdco-notify.json`
     "permission": "Submarine",
     "question": "Submarine"
   },
+  "badge": {
+    "enabled": true
+  },
   "quietHours": {
     "enabled": false,
     "start": "22:00",
@@ -103,6 +108,7 @@ Configuration keys:
 - `notifyChildSessions` (default `false`): when `true`, include child/sub-session `session.idle` and `session.error` notifications (question and permission notifications are unaffected).
 - `terminal` (optional): override terminal auto-detection.
 - `sounds`: per-event sounds (`idle`, `error`, `permission`, optional `question`).
+- `badge` (default `{ enabled: true }`): terminal badge via `BEL` character (`\x07`). Flashes the terminal tab/window and badges the dock icon. In tmux, marks the window with activity. Set `enabled: false` to disable.
 - `quietHours`: scheduled suppression window.
 
 **Available macOS sounds:** Basso, Blow, Bottle, Frog, Funk, Glass, Hero, Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink

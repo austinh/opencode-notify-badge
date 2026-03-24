@@ -41,6 +41,10 @@ interface NotifyConfig {
 		permission: string
 		question?: string
 	}
+	/** Terminal badge via BEL character (\x07) — badges tab/dock icon */
+	badge: {
+		enabled: boolean
+	}
 	/** Quiet hours configuration */
 	quietHours: {
 		enabled: boolean
@@ -63,6 +67,9 @@ const DEFAULT_CONFIG: NotifyConfig = {
 		idle: "Glass",
 		error: "Basso",
 		permission: "Submarine",
+	},
+	badge: {
+		enabled: true,
 	},
 	quietHours: {
 		enabled: false,
@@ -105,6 +112,10 @@ async function loadConfig(): Promise<NotifyConfig> {
 			sounds: {
 				...DEFAULT_CONFIG.sounds,
 				...userConfig.sounds,
+			},
+			badge: {
+				...DEFAULT_CONFIG.badge,
+				...userConfig.badge,
 			},
 			quietHours: {
 				...DEFAULT_CONFIG.quietHours,
@@ -203,6 +214,16 @@ function isQuietHours(config: NotifyConfig): boolean {
 }
 
 // ==========================================
+// TERMINAL BADGE (BEL)
+// ==========================================
+
+function sendTerminalBadge(config: NotifyConfig): void {
+	if (!config.badge.enabled) return
+	if (isQuietHours(config)) return
+	process.stdout.write("\x07")
+}
+
+// ==========================================
 // PARENT SESSION DETECTION
 // ==========================================
 
@@ -291,6 +312,8 @@ async function handleSessionIdle(
 	// Check if terminal is focused (suppress notification if user is already looking)
 	if (await isTerminalFocused(terminalInfo)) return
 
+	sendTerminalBadge(config)
+
 	// Get session info for context
 	let sessionTitle = "Task"
 	try {
@@ -335,6 +358,8 @@ async function handleSessionError(
 	// Check if terminal is focused (suppress notification if user is already looking)
 	if (await isTerminalFocused(terminalInfo)) return
 
+	sendTerminalBadge(config)
+
 	const errorMessage = error?.slice(0, 100) || "Something went wrong"
 
 	await sendNotification(
@@ -362,6 +387,8 @@ async function handlePermissionUpdated(
 	// Check if terminal is focused (suppress notification if user is already looking)
 	if (await isTerminalFocused(terminalInfo)) return
 
+	sendTerminalBadge(config)
+
 	await sendNotification(
 		{
 			title: "Waiting for you",
@@ -380,6 +407,8 @@ async function handleQuestionAsked(
 ): Promise<void> {
 	// Guard: quiet hours only (no focus check for questions - tmux workflow)
 	if (isQuietHours(config)) return
+
+	sendTerminalBadge(config)
 
 	const sound = config.sounds.question ?? config.sounds.permission
 
